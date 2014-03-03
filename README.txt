@@ -41,15 +41,10 @@ Petrov's patch, as your system's `sshd` would be then be sufficient.
 Of course, you have to solve how to authenticate the device's
 hostkey without using a CA.     
 
-
-===== KENT - IS THE BELOW STILL TRUE?
 One final comment regarding X.509 certificates.  As of the time of
 this writing, both J2SSH Maverick and Roumen Petrov's OpenSSH patch
-implement draft-saarenmaa-ssh-x509-00 (not RFC 6187).  That said,
-when asked, both implementors said that supporting RFC 6187 was on
-their TODO lists.  If your deployments require complete standards
-compliance, waiting for these two packages to implement RFC 6187 is
-likely the fastest option.  The good news is that this reference
-implementation should be uneffected by the update to those packages.
-
+implement implement RFC 6187, but with incompatible algorithms.  
+While waiting for a compatible set of algorithms to be supported,
+this code temporarily uses the X.509 algorithms defined in
+draft-saarenmaa-ssh-x509-00 instead.
 

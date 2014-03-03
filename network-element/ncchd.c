@@ -257,7 +257,6 @@ connect_to_application(Application* app) {
     }
   
     // continually try to connect 
-    // KENT FIXME: proc only to respond to INT/HUP from parent process!!!
     bool start_over = true;
     while (1) {
         uint8_t            retry_count;
