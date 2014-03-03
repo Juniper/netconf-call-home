@@ -1,0 +1,176 @@
+# These instructions compile the `ncchd` (netconf callhome deamon) for the
+# network-element's half of a NETCONF Call-Home connection.  This code 
+# uses X.509 certificates, as is recommended by the Reverse SSH draft 
+# (draft-ietf-netconf-reverse-ssh).
+#
+# Note: this code does not yet support reverse-TLS.
+:w
+
+
+1. Get most recent OpenSSH X.509 patch Roumen Petrov's site
+
+   Main site: http://roumenpetrov.info/openssh/
+
+   At this time, the most recent patch is version 7.6, which is
+   intended to applied against the OpenSSH 6.3p1 codebase.
+
+   Example: ('\' added for formatting only)
+
+       # cd network-element  // just in case you skipped step #0
+       # curl -O http://roumenpetrov.info/openssh/x509-7.8/openssh-6.5p1\
+       +x509-7.8.diff.gz
+
+
+
+2. Get matching source code for the *portable* version of OpenSSH
+
+   Main site: http://www.openssh.org/portable.html
+
+   Example: ('\' added for formatting only)
+
+       # cd network-element  // in case you're not still
+       # curl -O http://mirror.jmu.edu/pub/OpenBSD/OpenSSH/portable/\
+       openssh-6.5p1.tar.gz
+
+
+
+3. Uncompress the patch and extract the OpenSSH codebase
+
+   Example:
+
+       # cd network-element  // in case you're not still
+       # gunzip openssh-6.5p1+x509-7.8.diff.gz
+       # tar -xzvf openssh-6.5p1.tar.gz
+       # rm openssh-6.5p1.tar.gz             // not needed anymore
+
+
+
+4. Apply patch to OpenSSH codebase
+
+   Example:
+
+       # cd openssh-6.5p1
+       # cat ../openssh-6.5p1+x509-7.8.diff | patch -p 1
+       # rm ../openssh-6.5p1+x509-7.8.diff // not needed anymore
+
+
+5. Compile OpenSSH and install it in a non-system directory
+
+   Follow the instructions in the INSTALL file
+
+   Example:
+
+       # cd openssh-6.5p1  // just in case you changed directory...
+       # ./configure --prefix=/usr/local/openssh-6.5p1+x509-7.8
+       # make
+       # sudo make install
+       # cd ..
+       # rm -rf openssh-6.3p1   // not needed anymore
+
+       Notes:
+
+         a) installing in a non-system directory so as to
+            not interfere with standard system functions
+
+         b) if you get the error "OpenSSL headers do not match your
+            library", compile OpenSSL from source and then pass 
+            --with-ssl-dir=/usr/local/openssl-1.0.1f, assuming you 
+            installed "openssl-1.0.1f" in /usr/local/openssl-1.0.1f. 
+            Also, if on a Mac, be sure to use the ./Configure if
+            prompted.
+
+         c) the following warning is harmless
+
+            ld: warning: _OPENSSL_ia32cap_P has different   \
+            visibility (hidden) in /Users/kwatsen/Downloads \
+            /openssl-1.0.1e/libcrypto.a(x86_64cpuid.o) and  \
+            (default) in /Users/kwatsen/Downloads/openssl-1 \
+            .0.1e/libcrypto.a(cryptlib.o)
+
+
+6. Ensure user can login
+
+   This simluates a NMS logging into a device
+
+   Example:
+
+       Start the server (in debug mode on a non-standard port)
+       ----------------
+       # sudo /usr/local/openssh-6.5p1+x509-7.8/sbin/sshd -d \
+         -p 8022 -f /usr/local/openssh-6.5p1+x509-7.8/etc/sshd_config
+
+       // You should see message like "Server listening on 
+       // :: port 8022".  Using 8022 because Reverse SSH 
+       // doesn't have an IANA-assigned port yet.
+
+
+       Start a client  (in another shell window)
+       --------------
+       # ssh -v -F /usr/local/openssh-6.5p1+x509-7.8/etc/ssh_config \
+         -p 8022 localhost
+
+
+  Notes:
+
+    - if all goes well, the authentication step succeeds and your 
+      client is in the specified user's home directory
+
+    - if you get an error like:
+
+           ssh_sandbox_child: sandbox_init: dlopen(/usr/lib/libsand\
+           box.1.dylib, 261): image not found [preauth]
+
+       it's possible that the "sandbox" priviledge separation
+       logic is getting in the way.  It can be disabled as follows:
+
+       # sudo vi /usr/local/openssh-6.5p1+x509-7.8/etc/sshd_config
+
+         - UsePrivilegeSeparation sandbox
+         + #UsePrivilegeSeparation sandbox
+
+
+
+7. Install libroxml
+
+   The `ncchd` daemon uses libroxml to load an XML-formatted 
+   configuration file.  As it is not a standard library, it must
+   also be installed.
+
+   Main site: http://www.libroxml.net/
+
+   Example: ('\' added for formatting only)
+
+       # cd network-element
+       # curl -O http://download.libroxml.net/pool/v2.x/libroxml-2.3.0.tar.gz
+       # tar -xzvf libroxml-2.3.0.tar.gz
+       # rm libroxml-2.3.0.tar.gz  // don't need this anymore
+       # cd libroxml-2.3.0
+       # ./configure
+       # make // don't install
+
+
+
+8. Compile the `ncchd` daemon
+
+   Example:
+       # cd network-element
+       # vi ncchd.c
+         // set the PATH_SSHD variable inside ncchd.c, if necessary 
+         // currently set to /usr/local/openssh-6.5p1+x509-7.8/sbin/sshd
+       # make  // or gmake
+
+   You will now have the `ncchd` executable in the ncchd directory
+
+
+
+9. test run `ncchd`
+
+       # make run  // or gmake
+
+         This will print an error about missing ssh_hostkey.pem 
+         hostkey and exit.
+
+
+`ncchd` is now compilied.
+
+ 

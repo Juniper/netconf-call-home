@@ -1,0 +1,22 @@
+
+The psuedocode for the SimpleNMS is as follows:
+
+  - read properties file specified by command line
+  - listen for connections on port specified in the properties file
+  - for each connection, spawn a thread that runs the DeviceHandler class 
+      - start ssh connection using socket accepted by main()
+      - authenticate device's host key signed by trusted CA (in prop file)
+      - log into device using specified username
+          - first try to auth using a private key
+          - next try to auth using a password
+      - start NETCONF subsystem
+      - send <hello>
+      - if auth using private key failed, set private key on device
+      - send <close-session>
+
+
+Opportunities for improvement:
+  - have more than one instance of NMS running (test fail over)
+  - bug on Mac OS X platform: password-auth used to work, but now doesn't?
+
+

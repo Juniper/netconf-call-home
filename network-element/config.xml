@@ -1,0 +1,41 @@
+<netconf xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-server">
+  <call-home>
+    <applications>
+      <application>
+        <name>config-mgr</name>
+        <description>
+           This entry requests the device to periodically
+           connect to the Configuration Manager application
+        </description>
+        <servers>
+           <server>
+              <address>localhost</address>
+              <port>7777</port>
+           </server>
+        </servers>
+        <transport>
+           <ssh>
+              <host-keys>
+                 <host-key>
+                    <name>ssh_hostkey.pem</name>
+                 </host-key>
+              </host-keys>
+           </ssh>
+        </transport>
+        <connection-type>
+          <persistent>
+            <keep-alives>
+              <timeout-mins>5</timeout-mins>
+              <linger-secs>10</linger-secs>
+            </keep-alives>
+          </persistent>
+        </connection-type>
+        <reconnect-strategy>
+           <start-with>last-connected</start-with>
+           <interval-secs>10</interval-secs>
+           <count-max>3</count-max>
+        </reconnect-strategy>
+      </application>
+    </applications>
+  </call-home>
+</netconf>

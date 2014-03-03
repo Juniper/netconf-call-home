@@ -1,0 +1,69 @@
+# These instructions compile the SimpleNMS class for the management-server's
+# half of a NETCONF Call-Home connection.  This code uses X.509 certificates,
+# as is recommended by the Reverse SSH draft (draft-ietf-netconf-reverse-ssh).
+
+
+1. Get the most recent stable J2SSH Maverick library
+
+   Warning: this is a commercial product, but has a free 6-week eval
+            license.  This is the *only* Java-based SSH library known
+            to support X.509 certificates.  If you don't care about
+            X.509 and don't want to purchase a license, the older
+            J2SSH (not Maverick) code is still available.
+
+   Main site: http://www.sshtools.com/products/j2ssh-maverick
+
+   Example:  ('\' added for formatting only)
+
+       # cd management-server/    // in case you're not already
+
+       - use a web broswer to download to latest (e.g. 1.6.1)
+       - unzip the download into the management-server directory
+       - this should result in a directory like:
+
+          management-server/maverick-legacy-client-1.6.1-professional
+
+       - remove the maverick download, it's not needed anymore
+
+
+
+2. Get an evaluation license for the J2SSH Maverick library
+
+   Main site: http://www.sshtools.com/products/j2ssh-maverick
+
+   Example:
+
+       # cd management-server/    // in case you're not already
+
+       - use a web broswer to download an evaluation license
+       - place the resulting license.txt file into the maverick directory:
+
+          maverick-legacy-client-1.6.1-professional/license.txt
+
+
+
+3. Get the most recent Simple Logging Facade library (Maverick dependency)
+
+   # curl -O http://www.slf4j.org/dist/slf4j-1.7.6.tar.gz
+   # tar -xzvf slf4j-1.7.6.tar.gz 
+   # rm slf4j-1.7.6.tar.gz  // don't need this anymore
+
+
+
+4. Compile the "SimpleNMS" class
+
+   Example:
+
+       # make
+
+
+
+5. Test-run
+
+       # make run
+
+       Should just output that it's listening on a port
+
+       ^C when you've seen enough
+
+

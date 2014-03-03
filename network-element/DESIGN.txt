@@ -1,0 +1,33 @@
+
+The core the the network-element code is modeled after the `inetd` daemon,
+except that, instead of listening for inbound connections (e.g. on port 22),
+it proactively initiates the TCP connection to the configured servers.  In
+either case, inetd or "ncchd", once the TCP connection is established, the code
+forks/execs `sshd -i`, where the "-i" parameter means that it's being
+passed an alread-accepted TCP connection.  To clarify even further, consider
+that this code doesn't itself link to any crypto libraries, as it makes a
+system-call to launch the `sshd` daemon, which links the crypto libraries.
+
+
+The psuedocode for `ncchd` is:
+
+    - read system's current running config via get_incoming_config(),
+      which loads the config.xml file
+    - for each app we're suppose to connect to
+        - fork thread to maintain persistent connection to the app,
+          reconnecting as needed
+            - read persisted_state to determine which server connected
+              to last time, if any (for reconnect-strategy)
+            - TCP to selected server and, if acccepted, fork/exec SSHD,
+              and save persisted_state for next time reconnect needed
+    - if SIGHUP, re-read and apply new running config
+    - if SIGINT, shutdown
+
+
+Opportunities for improvement:
+  - implement *periodic* connection logic
+  - use non-blocking connect instead of forking a process per app
+  - Bug on Mac OS X platform: SIGINT signal delivered twice?
+  - support IPv6
+
+

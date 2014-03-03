@@ -1,0 +1,112 @@
+
+Installation
+============
+
+This reference implementation has been tested on Mac OS X, Linux, and 
+OpenBSD.  There are a number of steps to follow to get it going, but 
+they work.  
+
+It is hoped that folks will contribute enhancements where things can
+be improved...
+
+
+Steps:
+
+
+1. build the "rsshd" daemon
+
+   # cd network-element
+   # more INSTALL.txt
+
+
+2. build the "SimpleNMS" class
+
+   # cd management-server
+   # more INSTALL.txt
+
+
+3. create certificate authority
+
+   # cd certificate-authority
+   # make
+
+
+4. generate network-element's private key and certificate signing request
+   
+   # cd network-element
+   # make cert_request
+
+   - notice that the device's unique-identifier is in the CN field
+     of the certificate request
+
+
+5. have CA sign the device's certificate signing request
+
+   # cd certificate-authority
+   # make sign_request
+
+     - this will prompt you for the pathname to the certificate request
+     - you can enter "../network-element/cert_request.pem"
+     - which will cause it to save "../network-element/signed_cert.pem"
+
+
+6. create device's SSH X.509-based hostkey
+
+   # cd network-element
+   # make ssh_hostkey
+
+
+7. copy CA's cert to management-server
+
+   # cd management-server
+   # cp ../certificate-authority/public/trusted_ca_cert.pem .
+
+      - note: this is the same name as configured in the config.prop file
+
+
+8. (OPTIONAL) generate a key-pair for user-auth
+
+   This implementation can either log into devices using password or
+   a key-pair.  If both are configured, but only password succeeds,
+   `ncchd` will try to save the management-server's public key into the
+   network-element's account's .ssh/authorized_keys file.
+
+   # cd management-server    (in case you're not still there)
+   # ssh-keygen -t rsa -b 2048 -N "" -f id_rsa >> /dev/null
+
+      - notes:
+         - will also create id_rsa.pub
+         - id_rsa is the filename as configured in the config.prop file
+
+
+9. (OPTIONAL) create an account for the management-server to log into
+
+    The management-server log into any user-account configured on the 
+    network-element, so long is the account's username and password
+    are set correctly in its config.prop file.
+
+    I've been creating accounts called "admin" with password "abc123",
+    which are the values you'll see in the current config.prop file.
+
+
+10. Run demo
+
+   The order of execution does not matter but, to simulate a normal
+   production environment, the management-server would already be
+   running and the network-element would stand-up later, so:
+
+   In one window:
+
+       # cd management-server
+       # make run
+
+         ^C when you've seen enough
+
+   In another window:
+
+       # cd network-element
+       # make run
+
+         ^C when you've seen enough
+
+

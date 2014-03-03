@@ -1,0 +1,38 @@
+
+# Port the server is to listen on
+server.port = 7777
+
+
+# Glabal trusted CA cert (all devices certs must be signed by this one)
+trusted_ca_cert = trusted_ca_cert.pem
+
+
+# Global username value (all devices expected to have this user account)
+default_device.username = admin
+
+
+# Global password value (all username accounts exceted to have this password)
+default_device.password = abc123
+
+
+# Global private key value (optional)
+# <value> is a filepath, relative to the current directory.  NOTE: 
+# both the file and its <filename>.pub equivalent must be in the same
+# directory (the app will try to save the pub key on the network after
+# logging in via password the first time).
+#default_device.private_key = id_rsa
+
+
+# number 
+num_devices = 3
+
+device.0.name = foobar0
+device.0.serial_number = ABCDEF00000
+
+device.1.name = foobar1
+device.1.serial_number = ABCDEF11111
+
+device.2.name = foobar2
+device.2.serial_number = ABCDEF22222
+
+
