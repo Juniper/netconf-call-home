@@ -23,7 +23,7 @@
 
           management-server/maverick-legacy-client-1.6.1-professional
 
-       - remove the maverick download, it's not needed anymore
+       # rm maverick-legacy-client-1.6.1-professiona.zip  // don't need this anymore
 
 
 
@@ -42,15 +42,18 @@
 
 
 
-3. Get the most recent Simple Logging Facade library (Maverick dependency)
+3. Get the the latest SFL4J package
 
-   # curl -O http://www.slf4j.org/dist/slf4j-1.7.6.tar.gz
-   # tar -xzvf slf4j-1.7.6.tar.gz 
-   # rm slf4j-1.7.6.tar.gz  // don't need this anymore
+   Main site: http://www.slf4j.org
 
+   Example:
 
+       # cd management-server/    // in case you're not already
+       # curl http://www.slf4j.org/dist/slf4j-1.7.6.tar.gz -o slf4j-1.7.6.tar.gz
+       # tar -xzvf slf4j-1.7.6.tar.gz
+       # rm slf4j-1.7.6.tar.gz   // don't need this anymore
 
-4. Compile the "SimpleNMS" class
+3. Compile the "SimpleNMS" class
 
    Example:
 
@@ -58,11 +61,12 @@
 
 
 
-5. Test-run
+4. Test-run
 
        # make run
 
-       Should just output that it's listening on a port
+       This will just print out that it is waiting to accept a
+       connection.
 
        ^C when you've seen enough
 

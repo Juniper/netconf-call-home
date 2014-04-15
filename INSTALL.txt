@@ -32,12 +32,9 @@ Steps:
 
 
 4. generate network-element's private key and certificate signing request
-   
-   # cd network-element
-   # make cert_request
 
-   - notice that the device's unique-identifier is in the CN field
-     of the certificate request
+   # cd network-element
+   # gmake cert_request
 
 
 5. have CA sign the device's certificate signing request
@@ -53,7 +50,7 @@ Steps:
 6. create device's SSH X.509-based hostkey
 
    # cd network-element
-   # make ssh_hostkey
+   # gmake ssh_hostkey
 
 
 7. copy CA's cert to management-server

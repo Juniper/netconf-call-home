@@ -87,9 +87,9 @@ struct Application {
   uint8_t              num_host_keys;         // set when transport_type==SSH
   HostKey             *host_keys;             // set when transport_type==SSH
   enum CONNECT_TYPE    connection_type;
+  KeepAliveStrategy    keep_alive_strategy;   // set when connection_type==PERSISTENT
   PeriodicConnectInfo  periodic_connect_info; // set when connection_type==PERIODIC
   ReconnectStrategy    reconnect_strategy;
-  KeepAliveStrategy    keep_alive_strategy;
 
   // operational state (not config!)
   pid_t                connecting_pid;

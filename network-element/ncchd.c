@@ -51,7 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
+#include <assert.h>   // use -DNDEBUG compiler option to remove asserts
 #include <fcntl.h>
 #include <netdb.h>
 #include <sys/stat.h>
@@ -104,6 +104,7 @@ signal_handler(int sig) {
 }
 
 
+#ifdef DEBUG_SSHD
 // this is simple utility to dump the Configuration structure to stdout
 static void
 print_config(Configuration* config) {
@@ -133,6 +134,10 @@ print_config(Configuration* config) {
         }
         if (app->connection_type == PERSISTENT) {
             printf("     - connection_type = persistent\n");
+            printf("          - keep_alive_strategy\n");
+            printf("               - interval_secs = %d\n", app->keep_alive_strategy.interval_secs);
+            printf("               - count_max = %d\n", app->keep_alive_strategy.count_max);
+
         } else {
             printf("     - connection_type = periodic\n");
             printf("        - timeout_mins = %d\n", app->periodic_connect_info.timeout_mins);
@@ -146,12 +151,10 @@ print_config(Configuration* config) {
         }
         printf("          - interval_secs = %d\n", app->reconnect_strategy.interval_secs);
         printf("          - count_max = %d\n", app->reconnect_strategy.count_max);
-        printf("     - keep_alive_strategy\n");
-        printf("          - interval_secs = %d\n", app->keep_alive_strategy.interval_secs);
-        printf("          - count_max = %d\n", app->keep_alive_strategy.count_max);
     }
     printf("\n");
 }
+#endif
 
 
 // This routine verifies values provided by the data access layer
@@ -161,6 +164,7 @@ verify_incoming_config(Configuration *config) {
     uint8_t app_idx;
     for (app_idx=0; app_idx<config->num_apps; app_idx++) {
         Application* app = &(config->apps[app_idx]);
+
         if (app->transport_type == SSH) {
             uint8_t key_idx;
             for (key_idx=0; key_idx<app->num_host_keys; key_idx++) {
@@ -176,8 +180,45 @@ verify_incoming_config(Configuration *config) {
                 }
             }
         }
+
+        if (app->transport_type == TLS) {
+            printf("Sorry, the TLS transport type isn't supported yet...\n");
+            return 1;
+        }
+
+        if (app->connection_type == PERIODIC) {
+            printf("Sorry, the PERIODIC connection type isn't supported yet...\n");
+            return 1;
+        }
     }
     return 0;
+}
+
+
+// deep-free the Application structure
+static void
+free_application(Application* app) {
+    int idx;
+    for (idx=0; idx<app->num_host_keys; idx++) {
+        free(&app->host_keys[idx]);
+    }
+    for (idx=0; idx<app->num_servers; idx++) {
+        free(&app->servers[idx]);
+    }
+    free(app);
+}
+
+
+
+// deep-free the Configuration structure
+static void
+free_configuration(Configuration* config) {
+    int app_idx;
+    for (app_idx=0; app_idx<config->num_apps; app_idx++) {
+        Application *app = &config->apps[app_idx];
+        free_application(app);
+    }
+    free(config);
 }
 
 
@@ -223,13 +264,53 @@ set_sshd_config_file(Application *app) {
 }
 
 
+// return connected TCP socket for specified hostname, which
+// may be a name or a v4/v6 address string
+static int // -1=error, OK otherwise
+connect_client(const char* hostname, uint16_t port) {
+    struct addrinfo hints, *res, *ressave;
+    int n, sockfd;
+    char   port_str[16];
+
+    sprintf(port_str, "%u", port);
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    
+    n = getaddrinfo(hostname, port_str, &hints, &res);
+    if (n <0 ) {
+        fprintf(stderr, "getaddrinfo error:: [%s]\n", gai_strerror(n));
+        return -1;
+    }
+
+    ressave = res;
+
+    sockfd=-1;
+    while (res) {
+        sockfd = socket(res->ai_family,
+                        res->ai_socktype,
+                        res->ai_protocol);
+
+        if (!(sockfd < 0)) {
+            if (connect(sockfd, res->ai_addr, res->ai_addrlen) == 0)
+                break;
+
+            close(sockfd);
+            sockfd=-1;
+        }
+    res=res->ai_next;
+    }
+
+    freeaddrinfo(ressave);
+    return sockfd;
+}
+
 
 
 // use forked proc to try to maintain a persistent connection to app...
 static int // 0=ok, 1=error
 connect_to_application(Application* app) {
-
-    printf("in connect_to_application()...\n");
 
     // fork a process so as to not block main thread 
     // from connecting to other apps...
@@ -237,7 +318,7 @@ connect_to_application(Application* app) {
     app->connecting_pid = fork();
     if (app->connecting_pid == -1) {
         printf("fork() failed\n");
-        return 1;  // this will cause main() to exit!
+        return 1;
     }
   
     if (app->connecting_pid != 0) {
@@ -246,14 +327,14 @@ connect_to_application(Application* app) {
     }
     // child process logic below
  
-    // restore default signal handlers  (IS THIS WORKING?)
+    // restore default signal handlers  (WORKING ON MAC?)
     if (signal(SIGINT, SIG_DFL) == SIG_ERR) {
         printf("signal() failed\n");
-        return 1;  // this will cause main() to exit!
+        return 1;
     }
     if (signal(SIGHUP, SIG_DFL) == SIG_ERR) {
         printf("signal() failed\n");
-        return 1;  // this will cause main() to exit!
+        return 1;
     }
   
     // continually try to connect 
@@ -262,11 +343,6 @@ connect_to_application(Application* app) {
         uint8_t            retry_count;
         uint8_t            svr_idx;
         int                sockfd;
-        struct hostent*    servent;
-        struct sockaddr_in servsock;
-
-   
-        printf("in connect_to_application()...(in while(1) loop)...\n");
 
         // find server to connect to (svr_idx)
         if (start_over == true) {
@@ -284,14 +360,13 @@ connect_to_application(Application* app) {
                 int            result;
 
                 result = get_persisted_state(app->name, &state);
-                if (result == 1) {
-                    printf("get_persisted_state(\"%s\") failed\n", app->name);
-                    assert(0); // FIXME
-                } else if (result == 2) {
+                if (result == 2) {
                     // no persisted state found, start with first server
                     svr_idx = 0;
+                } else if (result == 1) {
+                    printf("get_persisted_state(\"%s\") failed (ignoring)\n", app->name);
+                    svr_idx = 0; // set as if no persisted state found
                 } else {
-
                     // find the svr_idx having matching addr/port
                     for (svr_idx=0; svr_idx<app->num_servers; svr_idx++) {
                         if (memcmp(&(app->servers[svr_idx]), 
@@ -320,28 +395,12 @@ connect_to_application(Application* app) {
 
         // got the svr_idx to try to connect to, do it now...
         retry_count = 0;
-        while (retry_count <= app->reconnect_strategy.count_max) {
+        while (retry_count < app->reconnect_strategy.count_max) {
 
-            // allocate an endpoint for the connection
-            if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
-                printf("socket() failed\n");
-                return 1;
-            }
-  
-            // lookup addr
-            if ((servent = (struct hostent*)gethostbyname(
-                                       app->servers[svr_idx].addr)) == NULL) { 
-                printf("gethostbyname(%s) failed\n", app->servers[svr_idx].addr);
-                close(sockfd);
-                return 1;
-            }
-  
-            // connect 
-            servsock.sin_family = AF_INET;
-            servsock.sin_addr = *(struct in_addr *)servent->h_addr_list[0];
-            servsock.sin_port = htons(app->servers[svr_idx].port);
-            if (connect(sockfd, (struct sockaddr *)&servsock, 
-                                                sizeof(servsock)) != 0) {
+            // addr can a be hostname or v4/v6 addess string
+            sockfd = connect_client(app->servers[svr_idx].addr,
+                                    app->servers[svr_idx].port);
+            if (sockfd == -1) {
                 printf("connect failed...\n");
 
                 // connect failed
@@ -359,38 +418,45 @@ connect_to_application(Application* app) {
                 pid_t          retpid;
                 int            status;
 
-
                 // set persisted state
                 assert(sizeof(PersistedState) == sizeof(Server));
                 memcpy(&state, &(app->servers[svr_idx]), sizeof(Server));
                 result = set_persisted_state(app->name, &state);
                 if (result == 1) {
-                    printf("set_persisted_state(\"%s\") failed\n", app->name);
-                    assert(0); // FIXME
+                    printf("set_persisted_state(\"%s\") failed (ignoring)\n", app->name);
                 }
 
-                // fork exec sshd
+                // fork exec sshd 
+                // FIXME: TLS-based transport logic should be added here
                 if ((pid = fork()) == 0) { // child to exec sshd
                     char sshd_config_filename[64];
       
-                    // stdin/stdout/stderr for reading/writing to the client
-                    if (dup2(sockfd, 0) == -1) assert(0);
-                    if (dup2(sockfd, 1) == -1) assert(0);
-#ifndef DEBUG_SSHD
-                    if (dup2(sockfd, 2) == -1) assert(0);
-#endif
-
                     // write out the app's config-file
                     if (set_sshd_config_file(app) != 0) {
-                        printf ("set_sshd_config_file(app) failed\n");
-                        assert(0); // FIXME
+                        printf ("set_sshd_config_file(%s) failed\n", app->name);
+                        exit(1);  // just the child process exits
                     }
 
                     // store config filename in a var
                     sprintf(sshd_config_filename, ".%s.sshd_config_file", 
                                                   app->name);
 
+
+
+                    // dup stdin/stdout/stderr for reading/writing the client
+                    if (dup2(sockfd, 0) == -1) {
+                        printf("dup2(sockfd, 0) failed\n");
+                        exit(1);  // just the child process exits
+                    }
+                    if (dup2(sockfd, 1) == -1) {
+                        printf("dup2(sockfd, 1) failed\n");
+                        exit(1);  // just the child process exits
+                    }
 #ifndef DEBUG_SSHD
+                    if (dup2(sockfd, 2) == -1) {
+                        printf("dup2(sockfd, 2) failed\n");
+                        exit(1);  // just the child process exits
+                    }
                     execl(PATH_SSHD, PATH_SSHD, "-i", "-f",
                                                 sshd_config_filename, NULL);
 #else
@@ -399,7 +465,7 @@ connect_to_application(Application* app) {
 #endif
 
                     // logic should never get here
-                    assert(0);
+                    assert(0);  // ok for -DNDEBUG to remove
 
                 } // end child fork
 
@@ -431,7 +497,7 @@ connect_to_application(Application* app) {
     } // end while(1)
 
     // logic never gets here
-    assert(0);
+    assert(0);  // OK for -DNDEBUG to compile out
     return 1;
 }
 
@@ -448,14 +514,12 @@ connect_to_application(Application* app) {
 //   for each app in "new" active
 //       if pid not set
 //           - connect app
-static int
+static int // 0=OK, 1=ERROR
 apply_incoming_config(Configuration* active, Configuration* incoming) {
     int          incoming_app_idx;
     int          active_app_idx;
     Application* incoming_app;
     Application* active_app;
-
-    printf("in apply_incoming_config()...(active->num_apps = %d)\n", active->num_apps);
 
     // iterate over apps in active
     for (active_app_idx=0; active_app_idx<active->num_apps; active_app_idx++) {
@@ -478,51 +542,43 @@ apply_incoming_config(Configuration* active, Configuration* incoming) {
             }
         }
 
-        // check if app was found
+        // if app was NOT found, disconnect it
         if (incoming_app_idx == incoming->num_apps) {
             // app not found in incoming, disconnect it
             kill(active_app->connecting_pid, SIGKILL);
             active_app->connecting_pid = -1;
         }
 
+#ifdef DEBUG_SSHD
         // one way or the other, the pid should now be -1
         assert(active_app->connecting_pid == -1);
-        int idx;
-        for (idx=0; idx<active_app->num_host_keys; idx++) {
-            free(&active_app->host_keys[idx]);
-        }
-        for (idx=0; idx<active_app->num_servers; idx++) {
-            free(&active_app->servers[idx]);
-        }
-        free(active_app);
+#endif
+
+        // free this active app's memory
+        free_application(active_app);
     }
 
     // copy all the incoming app pointers to active
     memcpy(active, incoming, sizeof(Configuration));
 
-    printf("in apply_incoming_config()...(new active->num_apps = %d)\n", active->num_apps);
-    // iterate over apps in "new" active
+    // iterate over apps in "new" active, for those with no PID
     for (active_app_idx=0; active_app_idx<active->num_apps; active_app_idx++) {
-
         active_app = &(active->apps[active_app_idx]);
 
         // ensure app isn't already connected
         if (active_app->connecting_pid != -1) {
-            printf("in apply_incoming_config()...(active_app->connecting_pid != -1)\n");
             break;  // nothing to do
         }
 
-        // fork process to connect to this app
+        // connect to this app now
         int result = connect_to_application(active_app);
         if (result != 0) {
             printf("could not fork process to connect app \"%s\"\n", active_app->name);
-            return 1;  // this will cause main() to exit!
+            return 1;
         }
     }
-
     return 0;
 }
-
 
 
 /*****************************************************************************
@@ -541,13 +597,13 @@ int main(int argc, char* argv[]) {
     // register handler for graceful shutdown 
     if (signal(SIGINT, signal_handler) == SIG_ERR) {
       printf("signal() failed\n");
-      assert(0);
+      return 1;
     }
 
     // register handler to reload config
     if (signal(SIGHUP, signal_handler) == SIG_ERR) {
       printf("signal() failed\n");
-      assert(0);
+      return 1;
     }
 
     // alloc active-config.  Outside while-loop below since
@@ -560,41 +616,48 @@ int main(int argc, char* argv[]) {
 
     // exit on SIGINT, loop on SIGHUP
     while (shutting_down == false) {
-printf("in while (shutting_down == false) loop...\n");
 
         // alloc incoming-config
         incoming_config  = (Configuration*)calloc(1, sizeof(Configuration));
         if (incoming_config == NULL) {
             printf("could not alloc Configuration\n");
-            return 1;
+            sleep(5); 
+            continue;    // try again ad infinitum
         } 
 
-        // fetch latest config from system
+        // fetch and verify latest config from system
         result = get_incoming_config(incoming_config);
         if (result != 0) {
             printf("get_incoming_config() failed\n");
-            return 1;
+            free(incoming_config);
+            sleep(5); 
+            continue;    // try again ad infinitum
         }
+#ifdef DEBUG_SSHD
         print_config(incoming_config);
+#endif
         result = verify_incoming_config(incoming_config);
         if (result != 0) {
             printf("verify_incoming_config() failed\n");
-            return 1;
+            free_configuration(incoming_config);
+            sleep(5); 
+            continue;    // try again ad infinitum
         }
 
         // activate the incoming config (kill/fork procs as needed)
         result = apply_incoming_config(active_config, incoming_config);
         if (result != 0) {
             printf("apply_incoming_config() failed\n");
-            return 1;
+            free_configuration(incoming_config);
+            sleep(5); 
+            continue;    // try again ad infinitum
         }
 
         // don't need this anymore
-        free(incoming_config);
+        free_configuration(incoming_config);
 
         // sleep until either SIGINT or SIGHUP delivered
         while (shutting_down==false && restarting==false) {
-            printf("in while (shutting_down==false && restarting==false) loop...\n");
             sleep(300);
         }
 
@@ -604,31 +667,21 @@ printf("in while (shutting_down == false) loop...\n");
         }
     }
 
-    // if logic gets here, sigint signal must have been received.
-    printf("if logic gets here, sigint signal must have been received.\n");
+    // if logic gets here, SIGINT signal must have been received
 
     // shutting down - kill children
     for (app_idx=0; app_idx<active_config->num_apps; app_idx++) {
         Application *active_app;
-
         active_app = &active_config->apps[app_idx];
         if (active_app->connecting_pid != -1) {
             kill(active_app->connecting_pid, SIGKILL);
         }
-
-        int idx;
-        for (idx=0; idx<active_app->num_host_keys; idx++) {
-            free(&active_app->host_keys[idx]);
-        }
-        for (idx=0; idx<active_app->num_servers; idx++) {
-            free(&active_app->servers[idx]);
-        }
-        free(active_app);
     }
- 
-    free(active_config);
 
-    return 0;
+    // release memory
+    free_configuration(active_config);
+
+    return 0; // clean exit
 }
 
 

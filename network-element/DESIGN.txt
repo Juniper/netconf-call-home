@@ -24,10 +24,13 @@ The psuedocode for `ncchd` is:
     - if SIGINT, shutdown
 
 
-Opportunities for improvement:
-  - implement *periodic* connection logic
-  - use non-blocking connect instead of forking a process per app
+Missing features:
+  - *periodic* connection logic
+  - support TLS transport
+
+
+Open Issues:
+  - use non-blocking connect instead of forking a process per app?
   - Bug on Mac OS X platform: SIGINT signal delivered twice?
-  - support IPv6
 
 

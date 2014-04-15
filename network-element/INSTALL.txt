@@ -4,7 +4,6 @@
 # (draft-ietf-netconf-reverse-ssh).
 #
 # Note: this code does not yet support reverse-TLS.
-:w
 
 
 1. Get most recent OpenSSH X.509 patch Roumen Petrov's site

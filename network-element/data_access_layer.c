@@ -57,7 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
+#include <assert.h>    // use -DNDEBUG compiler option to remove asserts
 #include <errno.h>
 #include <unistd.h>
 #include "roxml.h"
@@ -166,7 +166,7 @@ get_incoming_config(Configuration* incoming_config) {
                     } else if (strcmp("tls", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
                         app->transport_type = TLS;
                     } else {
-                        printf("Unrecognized XML element in config file (%s)\n",
+                        printf("Unrecognized XML element in config file (%s) [2]\n",
                                                     roxml_get_name(cur_chld_node, NULL, 0));
                         roxml_release(RELEASE_ALL);
                         roxml_close(root);
@@ -179,6 +179,50 @@ get_incoming_config(Configuration* incoming_config) {
                     node_t *cur_idx2_node=roxml_get_chld(cur_chld_node, NULL, idx2);
                     if (strcmp("persistent", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
                         app->connection_type = PERSISTENT;
+                        if (roxml_get_chld_nb(cur_idx2_node) != 0) {
+                            node_t *keepalives_node=roxml_get_chld(cur_idx2_node, NULL, 0);
+                            assert(strcmp(roxml_get_name(keepalives_node, NULL, 0), "keep-alives")==0);
+
+                            int idx3;
+                            for (idx3=0; idx3<roxml_get_chld_nb(keepalives_node); idx3++) {
+                                node_t *cur_idx3_node=roxml_get_chld(keepalives_node, NULL, idx3);
+                                if (strcmp("interval-secs", roxml_get_name(cur_idx3_node, NULL, 0))==0) {
+                                    node_t *text = roxml_get_txt(cur_idx3_node, 0);
+                                    app->keep_alive_strategy.interval_secs= atoi(roxml_get_content(text, NULL, 0, NULL));
+                                } else if (strcmp("count-max", roxml_get_name(cur_idx3_node, NULL, 0))==0) {
+                                    node_t *text = roxml_get_txt(cur_idx3_node, 0);
+                                    app->keep_alive_strategy.count_max= atoi(roxml_get_content(text, NULL, 0, NULL));
+                                } else {
+                                    printf("Unrecognized XML element in config file (%s) [3]\n",
+                                                         roxml_get_name(cur_idx3_node, NULL, 0));
+                                    roxml_release(RELEASE_ALL);
+                                    roxml_close(root);
+                                    return 1;
+                                }
+                            }
+
+                        }
+
+
+/*
+            } else if (strcmp("keep-alive-strategy", roxml_get_name(cur_chld_node, NULL, 0))==0){
+                int idx2;
+                for (idx2=0; idx2<roxml_get_chld_nb(cur_chld_node); idx2++) {
+                    node_t *cur_idx2_node=roxml_get_chld(cur_chld_node, NULL, idx2);
+                    if (strcmp("interval-secs", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
+                        node_t *text =  roxml_get_txt(cur_idx2_node, 0);
+                        app->keep_alive_strategy.interval_secs = atoi(roxml_get_content(text, NULL, 0, NULL));
+                    } else if (strcmp("count-max", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
+                        node_t *text =  roxml_get_txt(cur_idx2_node, 0);
+                        app->keep_alive_strategy.count_max = atoi(roxml_get_content(text, NULL, 0, NULL));
+                    }
+                }
+*/
+
+
+
+
+
                     } else if (strcmp("periodic", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
                         app->connection_type = PERIODIC;
                         int idx3;
@@ -213,20 +257,8 @@ get_incoming_config(Configuration* incoming_config) {
                         app->reconnect_strategy.count_max = atoi(roxml_get_content(text, NULL, 0, NULL));
                     }
                 }
-            } else if (strcmp("keep-alive-strategy", roxml_get_name(cur_chld_node, NULL, 0))==0){
-                int idx2;
-                for (idx2=0; idx2<roxml_get_chld_nb(cur_chld_node); idx2++) {
-                    node_t *cur_idx2_node=roxml_get_chld(cur_chld_node, NULL, idx2);
-                    if (strcmp("interval-secs", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
-                        node_t *text =  roxml_get_txt(cur_idx2_node, 0);
-                        app->keep_alive_strategy.interval_secs = atoi(roxml_get_content(text, NULL, 0, NULL));
-                    } else if (strcmp("count-max", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
-                        node_t *text =  roxml_get_txt(cur_idx2_node, 0);
-                        app->keep_alive_strategy.count_max = atoi(roxml_get_content(text, NULL, 0, NULL));
-                    }
-                }
             } else {
-                printf("Unrecognized XML element in config file (%s)\n",
+                printf("Unrecognized XML element in config file (%s) [1]\n",
                                                          roxml_get_name(cur_chld_node, NULL, 0));
                 roxml_release(RELEASE_ALL);
                 roxml_close(root);
@@ -262,7 +294,8 @@ set_persisted_state(const char* appname, PersistedState* state) {
   size = fwrite(state, sizeof(PersistedState), 1, file);
   if (size != 1) {
     printf("fwrite() failed\n");
-    assert(0);
+    fclose(file);
+    return 1;
   }
   fclose(file);
   return 0;
@@ -296,7 +329,8 @@ get_persisted_state(const char* appname, PersistedState* state) {
   size = fread(state, sizeof(PersistedState), 1, file);
   if (size != 1) {
     printf("fread() failed\n");
-    assert(0);
+    fclose(file);
+    return 1;
   }
   fclose(file);
   return 0;
