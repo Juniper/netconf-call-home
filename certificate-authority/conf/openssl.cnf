@@ -1,7 +1,7 @@
 [ req ]
 default_bits            = 2048
 default_keyfile         = ./private/root.pem
-default_md              = sha1
+default_md              = sha256
 prompt                  = no
 distinguished_name      = root_ca_distinguished_name
 x509_extensions = v3_ca
@@ -36,7 +36,7 @@ name_opt                = ca_default
 cert_opt                = ca_default
 default_crl_days        = 30
 default_days            = 365
-default_md              = sha1
+default_md              = sha256
 preserve                = no
 policy                  = policy_match
 

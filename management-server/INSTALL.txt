@@ -1,57 +1,58 @@
-# These instructions compile the SimpleNMS class for the management-server's
-# half of a NETCONF Call-Home connection.  This code uses X.509 certificates,
-# as is recommended by the Reverse SSH draft (draft-ietf-netconf-reverse-ssh).
+# These instructions compile the SimpleNMS class for the management-server
+# half of NETCONF Call Home connection.  This code uses X.509 certificates,
+# as is recommended by the Call Home draft (draft-ietf-netconf-call-home-17).
 
 
 1. Get the most recent stable J2SSH Maverick library
 
    Warning: this is a commercial product, but has a free 6-week eval
-            license.  This is the *only* Java-based SSH library known
-            to support X.509 certificates.  If you don't care about
-            X.509 and don't want to purchase a license, the older
-            J2SSH (not Maverick) code is still available.
+            license.  This Java-based SSH library is known to support
+            X.509 certificates.  If you don't care about X.509 and
+            don't want to purchase a license, the older J2SSH (not
+            Maverick) code is still available.
 
-   Main site: http://www.sshtools.com/products/j2ssh-maverick
-
-   Example:  ('\' added for formatting only)
+   Main site: https://www.sshtools.com/en/products/j2ssh
 
        # cd management-server/    // in case you're not already
 
-       - use a web broswer to download to latest (e.g. 1.6.1)
+       - use a web browser to download to latest (e.g. 1.6.20)
        - unzip the download into the management-server directory
        - this should result in a directory like:
 
-          management-server/maverick-legacy-client-1.6.1-professional
+          management-server/maverick-legacy-client-1.6.20
 
-       # rm maverick-legacy-client-1.6.1-professiona.zip  // don't need this anymore
+       # rm maverick.zip  // don't need this anymore
 
 
 
 2. Get an evaluation license for the J2SSH Maverick library
 
-   Main site: http://www.sshtools.com/products/j2ssh-maverick
+   Main site: https://www.sshtools.com/en/products/j2ssh
 
    Example:
 
        # cd management-server/    // in case you're not already
 
-       - use a web broswer to download an evaluation license
-       - place the resulting license.txt file into the maverick directory:
+       - use a web browser to download an evaluation license
+       - place the license file into the maverick directory:
 
-          maverick-legacy-client-1.6.1-professional/license.txt
+          maverick-legacy-client-1.6.20/license.txt
+
+       - be sure to use this file name, `make run` depends on it
 
 
 
-3. Get the the latest SFL4J package
+3. Get the the latest SFL4J package (Simple Logging Facade for Java)
 
    Main site: http://www.slf4j.org
 
    Example:
 
        # cd management-server/    // in case you're not already
-       # curl http://www.slf4j.org/dist/slf4j-1.7.6.tar.gz -o slf4j-1.7.6.tar.gz
-       # tar -xzvf slf4j-1.7.6.tar.gz
-       # rm slf4j-1.7.6.tar.gz   // don't need this anymore
+       # curl -O http://www.slf4j.org/dist/slf4j-1.7.20.tar.gz
+       # tar -xzvf slf4j-1.7.20.tar.gz
+       # rm slf4j-1.7.20.tar.gz   // don't need this anymore
+
 
 3. Compile the "SimpleNMS" class
 

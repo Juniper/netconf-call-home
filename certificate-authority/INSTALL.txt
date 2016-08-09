@@ -1,0 +1,21 @@
+# These instructions set up simple CA that will sign the device's
+# CSR, producing a certificate that the device will present as its
+# SSH host key, per RFC 6187.
+
+1) Compile PKI
+
+   Example:
+
+     # make
+
+
+   Note: in case there is an error, you may need to compile a
+   current version of OpenSSL and then set the "OPENSSL" variable
+   in the Makefile to point to it. Example:
+
+     OPENSSL = /usr/local/openssl-1.0.2g/bin/openssl
+
+
+
+
+

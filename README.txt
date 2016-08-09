@@ -1,12 +1,12 @@
-NETCONF Call-Home Reference Implementation
+NETCONF Call Home Reference Implementation
 
 
 Introduction
 ============
 
 This software distribution contains a reference implementation 
-for NETCONF Call-Home, using the configuration described in 
-draft-kwatsen-netconf-server-01.
+for NETCONF Call Home, using the configuration described in 
+draft-ietf-netconf-call-home-17.
 
 The software includes code for both sides of the connection: 
 
@@ -24,7 +24,7 @@ Warning
 =======
 
 This implementation uses X.509-based SSH host-keys, as per the
-recommendation in draft-ietf-netconf-reverse-ssh.  However, the
+recommendation in draft-ietf-netconf-call-home.  However, the
 only Java-based SSH library found supporting X.509 is a commercial
 product called "J2SSH Maverick".  For testing purposes, you can
 get a free 6-week eval license from their site (the installation
@@ -38,13 +38,6 @@ code can be changed to use the 100% free "J2SSH" product, the
 predecsessor to the J2SSH Maverick product.  Further, if this 
 strategy is taken, there is no need to patch OpenSSH with Roumen 
 Petrov's patch, as your system's `sshd` would be then be sufficient.
-Of course, you have to solve how to authenticate the device's
-hostkey without using a CA.     
-
-One final comment regarding X.509 certificates.  As of the time of
-this writing, both J2SSH Maverick and Roumen Petrov's OpenSSH patch
-implement implement RFC 6187, but with incompatible algorithms.  
-While waiting for a compatible set of algorithms to be supported,
-this code temporarily uses the X.509 algorithms defined in
-draft-saarenmaa-ssh-x509-00 instead.
+Of course, you would then have to solve how to authenticate the 
+device's host key without using a CA...     
 

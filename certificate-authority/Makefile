@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Juniper Networks, Inc.
+# Copyright (c) 2014-2016, Juniper Networks, Inc.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,8 @@
 
 
 
-OPENSSL = /usr/local/openssl-1.0.1f/bin/openssl 
+OPENSSL = openssl
+#OPENSSL = /usr/local/openssl-1.0.2g/bin/openssl 
 
 
 all: public/trusted_ca_cert.pem
@@ -43,7 +44,8 @@ private:
 
 
 private/key.pem: private
-	$(OPENSSL) genrsa -out private/key.pem 2048
+	$(OPENSSL) ecparam -out private/key.pem -genkey -name prime256v1
+
 
 
 public:

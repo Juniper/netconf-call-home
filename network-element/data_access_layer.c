@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2014, Juniper Networks, Inc.
+Copyright (c) 2014-2016, Juniper Networks, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -166,7 +166,7 @@ get_incoming_config(Configuration* incoming_config) {
                     } else if (strcmp("tls", roxml_get_name(cur_idx2_node, NULL, 0))==0) {
                         app->transport_type = TLS;
                     } else {
-                        printf("Unrecognized XML element in config file (%s) [2]\n",
+                        printf("Unrecognized transport type config file (%s) [2]\n",
                                                     roxml_get_name(cur_chld_node, NULL, 0));
                         roxml_release(RELEASE_ALL);
                         roxml_close(root);
@@ -193,7 +193,7 @@ get_incoming_config(Configuration* incoming_config) {
                                     node_t *text = roxml_get_txt(cur_idx3_node, 0);
                                     app->keep_alive_strategy.count_max= atoi(roxml_get_content(text, NULL, 0, NULL));
                                 } else {
-                                    printf("Unrecognized XML element in config file (%s) [3]\n",
+                                    printf("Unrecognized keep-alives decendent element in config file (%s) [3]\n",
                                                          roxml_get_name(cur_idx3_node, NULL, 0));
                                     roxml_release(RELEASE_ALL);
                                     roxml_close(root);

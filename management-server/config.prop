@@ -8,11 +8,11 @@ trusted_ca_cert = trusted_ca_cert.pem
 
 
 # Global username value (all devices expected to have this user account)
-default_device.username = admin
+default_device.username = kwatsen
 
 
-# Global password value (all username accounts exceted to have this password)
-default_device.password = abc123
+# Global password value (all username accounts expected to have this password)
+#default_device.password = #Ju1c3F34st#
 
 
 # Global private key value (optional)

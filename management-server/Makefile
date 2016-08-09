@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Juniper Networks, Inc.
+# Copyright (c) 2014-2016, Juniper Networks, Inc.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -36,12 +36,12 @@ JAVA = java
 
 
 all:
-	$(JAVAC) -classpath "maverick-legacy-client-1.6.1-professional/dist/maverick-legacy-client-1.6.1-all.jar" SimpleNMS.java -Xlint:deprecation
+	$(JAVAC) -classpath "maverick-legacy-client-1.6.21-SNAPSHOT/dist/maverick-legacy-client-1.6.21-SNAPSHOT-all.jar" SimpleNMS.java -Xlint:deprecation
 
 clean:
 	@rm *.class id_rsa* trusted_ca_cert.pem
 
 
 run:
-	$(JAVA) -ea -cp "maverick-legacy-client-1.6.1-professional/dist/maverick-legacy-client-1.6.1-all.jar:slf4j-1.7.6/slf4j-api-1.7.6.jar:" -Dmaverick.license.filename=maverick-legacy-client-1.6.1-professional/license.txt -Dfile=config.prop SimpleNMS
+	$(JAVA) -ea -cp "maverick-legacy-client-1.6.21-SNAPSHOT/dist/maverick-legacy-client-1.6.21-SNAPSHOT-all.jar:slf4j-1.7.20/slf4j-api-1.7.20.jar:slf4j-1.7.20/slf4j-simple-1.7.20.jar:" -Dmaverick.license.filename=maverick-legacy-client-1.6.20/license.txt -Dfile=config.prop SimpleNMS
 

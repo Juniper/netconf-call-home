@@ -25,8 +25,8 @@
         <connection-type>
           <persistent>
             <keep-alives>
-              <timeout-mins>5</timeout-mins>
-              <linger-secs>10</linger-secs>
+              <interval-secs>10</interval-secs>
+              <count-max>2</count-max>
             </keep-alives>
           </persistent>
         </connection-type>

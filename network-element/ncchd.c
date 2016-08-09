@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2014, Juniper Networks, Inc.
+Copyright (c) 2014-2016, Juniper Networks, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -74,11 +74,11 @@ typedef unsigned int       bool;
 #define true 1
 #define false 0
 
-#define PATH_SSHD "/usr/local/openssh-6.5p1+x509-7.8/sbin/sshd"
+#define PATH_SSHD "/usr/local/pkixssh-8.9/sbin/sshd"
 
 // prints sshd's stderr to the screen, comment to direct
 // output to the log file specified in the sshd_config file
-//#define DEBUG_SSHD
+#define DEBUG_SSHD
 
 
 /*****************************************************************************
@@ -236,6 +236,13 @@ set_sshd_config_file(Application *app) {
     if (file == NULL) {
         return 1;
     }
+
+    sprintf(buff,"UsePAM yes\n");
+    fwrite(buff, strlen(buff), 1, file);
+
+    sprintf(buff,"UsePrivilegeSeparation no\n");
+    fwrite(buff, strlen(buff), 1, file);
+
     sprintf(buff,"ClientAliveInterval %d\n", 
                                       app->keep_alive_strategy.interval_secs);
     fwrite(buff, strlen(buff), 1, file);
@@ -252,12 +259,17 @@ set_sshd_config_file(Application *app) {
     for (host_key_idx=0; host_key_idx<app->num_host_keys; host_key_idx++) {
         HostKey* host_key;
         host_key = &(app->host_keys[host_key_idx]);
-        sprintf(buff,"HostKey %s", host_key->name);
+        sprintf(buff,"HostKey %s\n", host_key->name);
         fwrite(buff, strlen(buff), 1, file);
     }
 
-    //sprintf(buff,"X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1");
+    //sprintf(buff,"HostCertificate signed_cert.pem\n");
     //fwrite(buff, strlen(buff), 1, file);
+
+
+    //sprintf(buff,"X509KeyAlgorithm x509v3-ecdsa-sha2-nistp384,sha384,ecdsa-sha2-nistp384\n");
+    sprintf(buff,"X509KeyAlgorithm x509v3-ecdsa-sha2-nistp256,sha256,ecdsa-sha2-nistp256\n");
+    fwrite(buff, strlen(buff), 1, file);
 
     fclose(file);
     return 0;
@@ -339,9 +351,10 @@ connect_to_application(Application* app) {
   
     // continually try to connect 
     bool start_over = true;
-    while (1) {
+    //while (1) {
+    {
         uint8_t            retry_count;
-        uint8_t            svr_idx;
+        uint8_t            svr_idx=0;
         int                sockfd;
 
         // find server to connect to (svr_idx)
@@ -485,7 +498,6 @@ connect_to_application(Application* app) {
                 close(sockfd);
                 break;
             }
-
         } // end while trying to connect to server
 
         if (retry_count < app->reconnect_strategy.count_max) {

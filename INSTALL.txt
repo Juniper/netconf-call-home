@@ -13,7 +13,7 @@ be improved...
 Steps:
 
 
-1. build the "rsshd" daemon
+1. build the "ncchd" daemon
 
    # cd network-element
    # more INSTALL.txt
@@ -28,13 +28,13 @@ Steps:
 3. create certificate authority
 
    # cd certificate-authority
-   # make
+   # more INSTALL.txt
 
 
 4. generate network-element's private key and certificate signing request
 
    # cd network-element
-   # gmake cert_request
+   # make cert_request   (or `gmake`)
 
 
 5. have CA sign the device's certificate signing request
@@ -50,7 +50,7 @@ Steps:
 6. create device's SSH X.509-based hostkey
 
    # cd network-element
-   # gmake ssh_hostkey
+   # make ssh_hostkey
 
 
 7. copy CA's cert to management-server
@@ -78,7 +78,7 @@ Steps:
 
 9. (OPTIONAL) create an account for the management-server to log into
 
-    The management-server log into any user-account configured on the 
+    The management-server can log into any user-account configured on the 
     network-element, so long is the account's username and password
     are set correctly in its config.prop file.
 
@@ -97,13 +97,18 @@ Steps:
        # cd management-server
        # make run
 
-         ^C when you've seen enough
-
    In another window:
 
        # cd network-element
        # make run
 
-         ^C when you've seen enough
+   In this demo, the device attempts to maintain a persistent 
+   connection with the management server, which is pathologically
+   always closing the NETCONF session.  This drives a looping
+   behavior.  Output is in the management-server window.  When
+   you have seen enough, ^C out of both windows.
+
+
+Done!
 
 

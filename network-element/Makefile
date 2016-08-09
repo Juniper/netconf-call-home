@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Juniper Networks, Inc.
+# Copyright (c) 2014-2016, Juniper Networks, Inc.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
 
 CC = gcc
 LD = ld
-OPENSSL = /usr/local/openssl-1.0.1f/bin/openssl 
+OPENSSL = openssl 
+#OPENSSL = /usr/local/openssl-1.0.2g/bin/openssl 
 
 #SSHD_ABS_PATH="/usr/local/openssh-6.3p1+x509-7.6/sbin/sshd"
 
@@ -59,11 +60,12 @@ all:
 
 
 cert_request:
-	$(OPENSSL) req -new -newkey rsa:2048 -nodes -keyout private_key.pem -subj "/O=Example Inc/OU=Issuance Team/CN=ABCDEF11111" -out cert_request.pem
+	$(OPENSSL) ecparam -out private_key.pem -genkey -name prime256v1
+	$(OPENSSL) req -new -key private_key.pem -subj "/O=Example Inc/OU=Issuance Team/CN=ABCDEF11111" -out cert_request.pem 
 
 
 ssh_hostkey: private_key.pem signed_cert.pem
-	cat private_key.pem signed_cert.pem > ssh_hostkey.pem
+	cat private_key.pem signed_cert.pem ../certificate-authority/public/trusted_ca_cert.pem > ssh_hostkey.pem
 
 
 clean:
