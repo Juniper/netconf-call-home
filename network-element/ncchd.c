@@ -74,7 +74,7 @@ typedef unsigned int       bool;
 #define true 1
 #define false 0
 
-#define PATH_SSHD "/usr/local/pkixssh-8.9/sbin/sshd"
+#define PATH_SSHD "/usr/local/pkixssh-9.2/sbin/sshd"
 
 // prints sshd's stderr to the screen, comment to direct
 // output to the log file specified in the sshd_config file

@@ -1,31 +1,30 @@
 # These instructions compile the `ncchd` (netconf call home deamon) for the
-# network-element's half of a NETCONF Call-Home connection.  This code 
-# uses X.509 certificates, as is recommended by the Reverse SSH draft 
-# (draft-ietf-netconf-reverse-ssh).
+# network-element's half of a NETCONF Call Home connection.  This code 
+# uses X.509 certificates, as is recommended by the call home draft.
+# (draft-ietf-netconf-call-home).
 #
-# Note: this code does not yet support reverse-TLS.
+# Note: this code does not yet support netconf-ch-tls, only ssh is supported.
 
 
 1. Get most recent OpenSSH X.509 patch Roumen Petrov's site
 
    Main site: http://roumenpetrov.info/openssh/
 
-   At this time, the most recent patch is version 8.9, which is
+   At this time, the most recent patch is version 9.2, which is
    intended to applied against the OpenSSH 6.3p1 codebase.
 
    Example: ('\' added for formatting only)
 
        # cd network-element  // just in case you skipped step #0
-       # curl -O http://roumenpetrov.info/openssh/src/pkixssh-8.9.tar.gz
-
+       # curl -O http://roumenpetrov.info/secsh/src/pkixssh-9.2.tar.gz
 
 2. Extract download
 
    Example:
 
     # cd network-element // in case you're not still in it
-    # tar -xzvf pkixssh-8.9.tar.gz
-    # rm pkixssh-8.9.tar.gz
+    # tar -xzvf pkixssh-9.2.tar.gz
+    # rm pkixssh-9.2.tar.gz
 
 
 3. Compile OpenSSH (PKIX-SSH) and install it in a non-system directory
@@ -38,12 +37,12 @@
 
    Example:
 
-       # cd pkixssh-8.9
-       # ./configure --prefix=/usr/local/pkixssh-8.9 --with-pam
+       # cd pkixssh-9.2
+       # ./configure --prefix=/usr/local/pkixssh-9.2 --with-pam
        # make
        # sudo make install
        # cd ..
-       # rm -rf pkixssh-8.9  // not needed anymore
+       # rm -rf pkixssh-9.2  // not needed anymore
 
        Notes:
 
@@ -68,8 +67,8 @@
 
        Start the server (in debug mode on a non-standard port)
        ----------------
-       # sudo /usr/local/pkixssh-8.9/sbin/sshd -d \
-         -p 4334 -f /usr/local/pkixssh-8.9/etc/sshd_config
+       # sudo /usr/local/pkixssh-9.2/sbin/sshd -d \
+         -p 4334 -f /usr/local/pkixssh-9.2/etc/sshd_config
 
        You should see message like "Server listening on 
        :: port 4334".  Using 4334 as it is the IANA-assigned
@@ -79,7 +78,7 @@
 
        Start a client  (in another shell window)
        --------------
-       /usr/local/pkixssh-8.9/bin/ssh -v -F /usr/local/pkixssh-8.9/etc/ssh_config -p 4334 localhost
+       /usr/local/pkixssh-9.2/bin/ssh -v -F /usr/local/pkixssh-9.2/etc/ssh_config -p 4334 localhost
 
        # ssh -v -p 4334 localhost
 
@@ -93,7 +92,7 @@
 
         Failed password for kwatsen from ::1 port 55229 ssh2
 
-     make the following change to /usr/local/pkixssh-8.9/etc/sshd_config
+     make the following change to /usr/local/pkixssh-9.2/etc/sshd_config
 
        #UsePAM no
        UsePAM yes
@@ -127,7 +126,7 @@
        # cd network-element
        # vi ncchd.c
          // set the PATH_SSHD variable inside ncchd.c, if necessary 
-         // default is: /usr/local/pkixssh-8.9/sbin/sshd
+         // default is: /usr/local/pkixssh-9.2/sbin/sshd
        # make  // or gmake
 
    You will now have the `ncchd` executable in the ncchd directory

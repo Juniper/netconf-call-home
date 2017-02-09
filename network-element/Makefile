@@ -43,7 +43,7 @@ WARNING_FLAGS = -Wall -Wshadow -Wpointer-arith \
  -Wno-long-long -Werror
 
 #NCCHD_CC_FLAGS = -g -Ilibroxml-2.3.0/src -DSSHD=$(SSHD_ABS_PATH) $(WARNING_FLAGS)
-NCCHD_CC_FLAGS = -g -Ilibroxml-2.3.0/src $(WARNING_FLAGS)
+NCCHD_CC_FLAGS = -g -O0 -Ilibroxml-2.3.0/src $(WARNING_FLAGS)
 NCCHD_LD_FLAGS = -Llibroxml-2.3.0/.libs/ -lroxml -lpthread
 
 NETCONFD_CC_FLAGS=-g $(WARNING_FLAGS)
@@ -60,12 +60,15 @@ all:
 
 
 cert_request:
-	$(OPENSSL) ecparam -out private_key.pem -genkey -name prime256v1
+	$(OPENSSL) ecparam -out private_key.pem -genkey -name prime256v1 -noout
 	$(OPENSSL) req -new -key private_key.pem -subj "/O=Example Inc/OU=Issuance Team/CN=ABCDEF11111" -out cert_request.pem 
 
 
 ssh_hostkey: private_key.pem signed_cert.pem
-	cat private_key.pem signed_cert.pem ../certificate-authority/public/trusted_ca_cert.pem > ssh_hostkey.pem
+	#$(OPENSSL) ec -in private_key.pem -pubout -out public_key.pem
+	#cat public_key.pem signed_cert.pem > ssh_hostkey.pem
+	cat private_key.pem signed_cert.pem > ssh_hostkey.pem
+	#cat private_key.pem signed_cert.pem ../certificate-authority/public/trusted_ca_cert.pem > ssh_hostkey.pem
 
 
 clean:

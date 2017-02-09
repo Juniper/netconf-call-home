@@ -15,11 +15,11 @@
 
        # cd management-server/    // in case you're not already
 
-       - use a web browser to download to latest (e.g. 1.6.20)
+       - use a web browser to download to latest (e.g. 1.6.24)
        - unzip the download into the management-server directory
        - this should result in a directory like:
 
-          management-server/maverick-legacy-client-1.6.20
+          management-server/maverick-legacy-client-1.6.24
 
        # rm maverick.zip  // don't need this anymore
 
@@ -36,7 +36,7 @@
        - use a web browser to download an evaluation license
        - place the license file into the maverick directory:
 
-          maverick-legacy-client-1.6.20/license.txt
+          maverick-legacy-client-1.6.24/license.txt
 
        - be sure to use this file name, `make run` depends on it
 
@@ -49,21 +49,23 @@
    Example:
 
        # cd management-server/    // in case you're not already
-       # curl -O http://www.slf4j.org/dist/slf4j-1.7.20.tar.gz
-       # tar -xzvf slf4j-1.7.20.tar.gz
-       # rm slf4j-1.7.20.tar.gz   // don't need this anymore
+       # curl -O http://www.slf4j.org/dist/slf4j-1.7.21.tar.gz
+       # tar -xzvf slf4j-1.7.21.tar.gz
+       # rm slf4j-1.7.21.tar.gz   // don't need this anymore
 
 
 3. Compile the "SimpleNMS" class
 
    Example:
 
+       # cd management-server/    // in case you're not already
        # make
 
 
 
 4. Test-run
 
+       # cd management-server/    // in case you're not already
        # make run
 
        This will just print out that it is waiting to accept a
